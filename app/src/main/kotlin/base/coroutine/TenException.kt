@@ -267,11 +267,11 @@ fun main111() = runBlocking {
 }
 
 // 代码段12
-// async 当中产生异常，即使我们不调用 await() 同样是会导致程序崩溃的
 fun main112() = runBlocking {
     val deferred = async {
         delay(100L)
         1 / 0
+        // async 当中产生异常，即使我们不调用 await() 同样是会导致程序崩溃的
     }
 
     try {
@@ -293,7 +293,26 @@ Exception in thread "main" ArithmeticException: / by zero
 
 // SupervisorJob 如果我们要使用 try-catch 包裹“deferred.await()”的话，还需要配合 SupervisorJob 一起使用
 // SupervisorJob() 其实不是构造函数，它只是一个普通的顶层函数
-// SupervisorJob 与 Job 最大的区别就在于，当它的子 Job 发生异常的时候，其他的子 Job 不会受到牵连
+// SupervisorJob 与 Job 最大的区别就在于，当它的子Job【子协程/协程可以嵌套】 （scope.launch的协程作用域）发生异常的时候，其他的子 Job （runBlocking协程作用域里所有嵌套的程序）不会受到牵连，程序崩溃，普通的 Job，它会因为子协程当中的异常而取消自身
+// private val scope: CoroutineScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO)}
+// scope.launch {
+// }
+// Job可以理解为协程作用域
+fun main1144() = runBlocking {
+    async {
+        delay(100L)
+        1 / 0
+    }
+
+    delay(500L)
+    println("End")
+}
+/*
+输出结果
+直接崩溃：
+Exception in thread "main" ArithmeticException: / by zero
+*/
+
 // 代码段14
 fun main114() = runBlocking {
     val scope = CoroutineScope(SupervisorJob())
